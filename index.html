@@ -1,0 +1,1888 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sutemi — Private VPN Client for Windows</title>
+  <meta name="description" content="Sutemi is a lightweight Liquid Glass VPN utility for Windows with Smart AI-ready server filtering, real Gemini/ChatGPT/Claude access verification, System Proxy and TUN modes.">
+  <style>
+    :root {
+      --bg: #080a0f;
+      --bg-elev: #0e121b;
+      --panel: rgba(255, 255, 255, 0.04);
+      --panel-hover: rgba(255, 255, 255, 0.075);
+      --border: rgba(255, 255, 255, 0.12);
+      --border-strong: rgba(255, 255, 255, 0.24);
+      --text: #f5f7ff;
+      --muted: #939bb4;
+      --subtle: #666e85;
+      --mint: #5ee6b5;
+      --mint-deep: #2dc491;
+      --mint-text: #061812;
+      --ice: #cfe6ff;
+      --lavender: #d8c8ff;
+      --radius: 16px;
+      --container: 1180px;
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .container {
+      width: min(var(--container), calc(100% - 48px));
+      margin: 0 auto;
+    }
+
+    /* =======================================================
+       Scroll Progress Bar
+       ======================================================= */
+    .scroll-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 2px;
+      width: 0%;
+      z-index: 60;
+      background: linear-gradient(90deg, var(--mint), #aef7ea);
+      box-shadow: 0 0 10px rgba(94, 230, 181, 0.65);
+      pointer-events: none;
+      transition: width 0.08s linear;
+    }
+
+    /* =======================================================
+       Top Navigation
+       ======================================================= */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 40;
+      height: 64px;
+      background: rgba(8, 10, 15, 0.56);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+      animation: navSlideDown 0.6s var(--ease-out) both;
+    }
+
+    .navbar.scrolled {
+      background: rgba(8, 10, 15, 0.86);
+      border-bottom-color: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    }
+
+    @keyframes navSlideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .navbar-inner {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      min-width: 0;
+    }
+
+    .brand-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      letter-spacing: 2.2px;
+      font-size: 16px;
+      color: #ffffff;
+      transition: transform 0.2s var(--ease-out);
+    }
+
+    .brand-link:hover {
+      transform: scale(1.03);
+    }
+
+    .brand-svg {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      filter: drop-shadow(0 0 10px rgba(94, 230, 181, 0.35));
+    }
+
+    .version-badge {
+      padding: 3px 9px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 11px;
+      font-weight: 600;
+      color: #cbd5ee;
+      letter-spacing: 0.3px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      position: relative;
+      font-size: 13px;
+      font-weight: 500;
+      color: #b7c0d8;
+      padding: 4px 0;
+      transition: color 0.18s ease;
+      white-space: nowrap;
+    }
+
+    .nav-links a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -2px;
+      height: 1.5px;
+      background: var(--mint);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.24s var(--ease-out);
+    }
+
+    .nav-links a:hover {
+      color: #ffffff;
+    }
+
+    .nav-links a:hover::after {
+      transform: scaleX(1);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .search-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      height: 32px;
+      padding: 0 10px;
+      border-radius: 7px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.03);
+      color: #8f98b2;
+      font-size: 12px;
+      transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+    }
+
+    .search-trigger:hover {
+      border-color: rgba(255, 255, 255, 0.32);
+      background: rgba(255, 255, 255, 0.06);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .search-trigger-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .search-trigger svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .kbd-chip {
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.05);
+      font-size: 10px;
+      font-family: Consolas, monospace;
+      color: #b9c2d9;
+    }
+
+    .lang-switch {
+      display: inline-flex;
+      border-radius: 7px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .lang-btn {
+      border: 0;
+      background: transparent;
+      color: #8f98b2;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 6px 9px;
+      transition: background 0.18s ease, color 0.18s ease;
+    }
+
+    .lang-btn.active {
+      background: rgba(255, 255, 255, 0.13);
+      color: #ffffff;
+    }
+
+    .icon-nav-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 7px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.03);
+      color: #cbd5ee;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+    }
+
+    .icon-nav-btn:hover {
+      border-color: rgba(255, 255, 255, 0.34);
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .icon-nav-btn svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    /* =======================================================
+       Hero Section (Aligned Container + Vertical Center + Animations)
+       ======================================================= */
+    .hero {
+      position: relative;
+      min-height: min(92vh, 840px);
+      padding-top: 64px;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .hero-backdrop {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse at 72% 44%, rgba(94, 230, 181, 0.14), transparent 52%),
+        radial-gradient(ellipse at 20% 80%, rgba(154, 184, 255, 0.07), transparent 45%),
+        #07090e;
+    }
+
+    .hero-dot-grid {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+      background-size: 20px 20px;
+      mask-image: radial-gradient(ellipse at 65% 45%, rgba(0, 0, 0, 0.9), transparent 82%);
+    }
+
+    .hero-fallback-art {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.94;
+      animation: heroFloat 14s ease-in-out infinite alternate;
+    }
+
+    .hero-bg-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center right;
+      z-index: 1;
+      transform: scale(1.03);
+      animation: heroBgZoom 1.6s var(--ease-out) forwards, heroAmbient 16s ease-in-out 1.6s infinite alternate;
+    }
+
+    @keyframes heroBgZoom {
+      from {
+        opacity: 0;
+        transform: scale(1.07);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1.01);
+      }
+    }
+
+    @keyframes heroAmbient {
+      from {
+        transform: scale(1.01) translate3d(0, 0, 0);
+      }
+      to {
+        transform: scale(1.045) translate3d(-8px, -4px, 0);
+      }
+    }
+
+    @keyframes heroFloat {
+      from {
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+      to {
+        transform: translate3d(-10px, -6px, 0) scale(1.02);
+      }
+    }
+
+    .hero-scrim {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(7, 9, 14, 0.92) 0%, rgba(7, 9, 14, 0.72) 45%, rgba(7, 9, 14, 0.14) 100%),
+        linear-gradient(180deg, rgba(7, 9, 14, 0.48) 0%, rgba(7, 9, 14, 0) 35%, rgba(7, 9, 14, 0.96) 100%);
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 3;
+      padding: 64px 0 72px;
+    }
+
+    .hero-copy {
+      max-width: 580px;
+    }
+
+    .hero-anim {
+      opacity: 0;
+      transform: translateY(26px);
+      animation: heroSlideUp 0.75s var(--ease-out) forwards;
+    }
+
+    .hero-anim.d1 { animation-delay: 0.08s; }
+    .hero-anim.d2 { animation-delay: 0.18s; }
+    .hero-anim.d3 { animation-delay: 0.28s; }
+    .hero-anim.d4 { animation-delay: 0.38s; }
+
+    @keyframes heroSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(26px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(94, 230, 181, 0.34);
+      background: rgba(94, 230, 181, 0.08);
+      color: #a6fae0;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .hero-eyebrow i {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--mint);
+      box-shadow: 0 0 10px var(--mint);
+      animation: pulseDot 2.2s ease-in-out infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.45);
+        opacity: 0.55;
+      }
+    }
+
+    .hero h1 {
+      margin: 0 0 16px;
+      font-size: clamp(34px, 4.6vw, 56px);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -1.2px;
+      color: #ffffff;
+    }
+
+    .hero-sub {
+      margin: 0 0 30px;
+      font-size: clamp(15px, 1.5vw, 18px);
+      color: #a8b2cc;
+      max-width: 520px;
+      font-weight: 400;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary-mint {
+      position: relative;
+      overflow: hidden;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      height: 44px;
+      padding: 0 22px;
+      border-radius: 6px;
+      border: 1px solid #82f0c9;
+      background: var(--mint);
+      color: var(--mint-text);
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: 0 0 28px rgba(94, 230, 181, 0.28);
+      transition: transform 0.2s var(--ease-out), background 0.18s ease, box-shadow 0.2s ease;
+    }
+
+    .btn-primary-mint::after {
+      content: "";
+      position: absolute;
+      top: -20%;
+      bottom: -20%;
+      left: -45%;
+      width: 40%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+      transform: translateX(-140%) skewX(-22deg);
+      transition: transform 0.6s var(--ease-out);
+      pointer-events: none;
+    }
+
+    .btn-primary-mint:hover {
+      background: #77ecc3;
+      box-shadow: 0 0 38px rgba(94, 230, 181, 0.48);
+      transform: translateY(-2px);
+    }
+
+    .btn-primary-mint:hover::after {
+      transform: translateX(380%) skewX(-22deg);
+    }
+
+    .btn-arrow {
+      display: inline-block;
+      transition: transform 0.2s var(--ease-out);
+    }
+
+    .btn-primary-mint:hover .btn-arrow {
+      transform: translateX(4px);
+    }
+
+    .btn-primary-mint:hover .btn-arrow-down {
+      transform: translateY(3px);
+    }
+
+    .btn-secondary-dark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 44px;
+      padding: 0 20px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(18, 22, 32, 0.72);
+      backdrop-filter: blur(10px);
+      color: #f3f6ff;
+      font-size: 14px;
+      font-weight: 600;
+      transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s var(--ease-out);
+    }
+
+    .btn-secondary-dark:hover {
+      border-color: rgba(255, 255, 255, 0.44);
+      background: rgba(255, 255, 255, 0.11);
+      transform: translateY(-2px);
+    }
+
+    /* =======================================================
+       Scroll Reveal Animations
+       ======================================================= */
+    [data-reveal] {
+      opacity: 0;
+      transform: translateY(30px);
+      transition:
+        opacity 0.68s var(--ease-out),
+        transform 0.68s var(--ease-out);
+      transition-delay: var(--delay, 0ms);
+    }
+
+    [data-reveal="slide-left"] {
+      transform: translateX(-32px);
+    }
+
+    [data-reveal="slide-right"] {
+      transform: translateX(32px);
+    }
+
+    [data-reveal="scale"] {
+      transform: translateY(22px) scale(0.97);
+    }
+
+    [data-reveal].in-view {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    /* =======================================================
+       Sections General
+       ======================================================= */
+    .section {
+      padding: 88px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .section-head {
+      max-width: 660px;
+      margin-bottom: 42px;
+    }
+
+    .section-kicker {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2.2px;
+      text-transform: uppercase;
+      color: var(--mint);
+      margin-bottom: 10px;
+    }
+
+    .section-head h2 {
+      margin: 0 0 12px;
+      font-size: clamp(26px, 3vw, 36px);
+      font-weight: 750;
+      letter-spacing: -0.6px;
+      line-height: 1.15;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    /* =======================================================
+       Features Grid
+       ======================================================= */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .feature-card {
+      position: relative;
+      overflow: hidden;
+      padding: 24px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: linear-gradient(155deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015));
+      transition:
+        opacity 0.65s var(--ease-out),
+        transform 0.45s var(--ease-out),
+        border-color 0.22s ease,
+        background 0.22s ease,
+        box-shadow 0.22s ease;
+    }
+
+    .feature-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 20px;
+      right: 20px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(94, 230, 181, 0.65), transparent);
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .feature-card.in-view:hover {
+      border-color: rgba(94, 230, 181, 0.35);
+      background: linear-gradient(155deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.025));
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.36);
+    }
+
+    .feature-card.in-view:hover::before {
+      opacity: 1;
+    }
+
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid rgba(94, 230, 181, 0.30);
+      background: rgba(94, 230, 181, 0.08);
+      color: var(--mint);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      transition: transform 0.25s var(--ease-out), background 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .feature-card:hover .feature-icon {
+      transform: scale(1.08);
+      background: rgba(94, 230, 181, 0.16);
+      box-shadow: 0 0 20px rgba(94, 230, 181, 0.22);
+    }
+
+    .feature-icon svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .feature-card h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .feature-card p {
+      margin: 0;
+      font-size: 13.5px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    /* =======================================================
+       Protocol Strip + Get Started Steps
+       ======================================================= */
+    .protocols-bar {
+      margin-top: 24px;
+      padding: 18px 22px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.025);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .protocols-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: #b9c3dc;
+    }
+
+    .protocol-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .proto-pill {
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 12px;
+      font-weight: 600;
+      color: #dce4f7;
+      transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, transform 0.2s var(--ease-out);
+    }
+
+    .proto-pill:hover {
+      border-color: rgba(94, 230, 181, 0.45);
+      background: rgba(94, 230, 181, 0.10);
+      color: #a6fae0;
+      transform: translateY(-2px);
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .step-card {
+      position: relative;
+      padding: 22px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.025);
+      transition:
+        opacity 0.65s var(--ease-out),
+        transform 0.45s var(--ease-out),
+        border-color 0.22s ease,
+        background 0.22s ease;
+    }
+
+    .step-card.in-view:hover {
+      border-color: rgba(255, 255, 255, 0.28);
+      background: rgba(255, 255, 255, 0.045);
+      transform: translateY(-3px);
+    }
+
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(94, 230, 181, 0.12);
+      border: 1px solid rgba(94, 230, 181, 0.35);
+      color: var(--mint);
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 14px;
+      transition: transform 0.22s var(--ease-out), background 0.22s ease;
+    }
+
+    .step-card:hover .step-num {
+      transform: scale(1.1);
+      background: rgba(94, 230, 181, 0.22);
+    }
+
+    .step-card h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .step-card p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* =======================================================
+       Downloads Section
+       ======================================================= */
+    .download-box {
+      display: grid;
+      grid-template-columns: 1.35fr 0.85fr;
+      gap: 24px;
+      padding: 28px;
+      border-radius: 20px;
+      border: 1px solid rgba(94, 230, 181, 0.24);
+      background:
+        radial-gradient(ellipse at 100% 0%, rgba(94, 230, 181, 0.11), transparent 55%),
+        linear-gradient(155deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+      transition:
+        opacity 0.7s var(--ease-out),
+        transform 0.7s var(--ease-out),
+        border-color 0.25s ease,
+        box-shadow 0.25s ease;
+    }
+
+    .download-box.in-view:hover {
+      border-color: rgba(94, 230, 181, 0.42);
+      box-shadow: 0 20px 55px rgba(0, 0, 0, 0.4);
+    }
+
+    .download-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .dl-tag {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.05);
+      font-size: 11px;
+      font-weight: 600;
+      color: #dbe3f7;
+    }
+
+    .dl-tag.mint {
+      border-color: rgba(94, 230, 181, 0.38);
+      background: rgba(94, 230, 181, 0.10);
+      color: #a6fae0;
+    }
+
+    .download-main h3 {
+      margin: 0 0 10px;
+      font-size: 24px;
+      font-weight: 750;
+    }
+
+    .download-main p {
+      margin: 0 0 22px;
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 560px;
+    }
+
+    .download-specs {
+      padding: 20px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      background: rgba(8, 10, 15, 0.55);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .spec-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 13px;
+    }
+
+    .spec-row:last-child {
+      padding-bottom: 0;
+      border-bottom: 0;
+    }
+
+    .spec-row span {
+      color: var(--muted);
+    }
+
+    .spec-row strong {
+      color: #ffffff;
+      font-weight: 600;
+      text-align: right;
+    }
+
+    /* =======================================================
+       FAQ Accordion (Smooth Slide Open)
+       ======================================================= */
+    .faq-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 860px;
+    }
+
+    .faq-item {
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.025);
+      overflow: hidden;
+      transition:
+        opacity 0.6s var(--ease-out),
+        transform 0.6s var(--ease-out),
+        border-color 0.2s ease,
+        background 0.2s ease;
+    }
+
+    .faq-item.open {
+      border-color: rgba(255, 255, 255, 0.28);
+      background: rgba(255, 255, 255, 0.045);
+    }
+
+    .faq-q {
+      width: 100%;
+      padding: 17px 20px;
+      border: 0;
+      background: transparent;
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 600;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .faq-plus {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      color: #cbd5ee;
+      flex-shrink: 0;
+      transition: transform 0.28s var(--ease-out), background 0.22s ease, color 0.22s ease, border-color 0.22s ease;
+    }
+
+    .faq-item.open .faq-plus {
+      transform: rotate(45deg);
+      background: rgba(94, 230, 181, 0.14);
+      border-color: rgba(94, 230, 181, 0.45);
+      color: var(--mint);
+    }
+
+    .faq-a {
+      display: grid;
+      grid-template-rows: 0fr;
+      opacity: 0;
+      transition: grid-template-rows 0.34s var(--ease-out), opacity 0.28s ease;
+    }
+
+    .faq-item.open .faq-a {
+      grid-template-rows: 1fr;
+      opacity: 1;
+    }
+
+    .faq-a-inner {
+      overflow: hidden;
+    }
+
+    .faq-a-inner p {
+      margin: 0;
+      padding: 0 20px 18px;
+      font-size: 13.5px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* =======================================================
+       Footer
+       ======================================================= */
+    .footer {
+      padding: 34px 0;
+      color: var(--subtle);
+      font-size: 12.5px;
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      transition: color 0.18s ease;
+    }
+
+    .footer-links a:hover {
+      color: #ffffff;
+    }
+
+    /* =======================================================
+       Search Modal (Ctrl + K)
+       ======================================================= */
+    .search-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: rgba(4, 6, 11, 0.76);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 96px 18px 18px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .search-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .search-modal {
+      width: min(580px, 100%);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.20);
+      background: #10141f;
+      box-shadow: 0 26px 90px rgba(0, 0, 0, 0.72);
+      overflow: hidden;
+      transform: translateY(-14px) scale(0.97);
+      transition: transform 0.24s var(--ease-out);
+    }
+
+    .search-backdrop.open .search-modal {
+      transform: translateY(0) scale(1);
+    }
+
+    .search-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+    }
+
+    .search-input-wrap svg {
+      width: 16px;
+      height: 16px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .search-field {
+      flex: 1;
+      border: 0;
+      background: transparent;
+      color: #ffffff;
+      font-size: 14px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .search-results {
+      max-height: 320px;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .search-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      color: #dbe3f7;
+      font-size: 13px;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .search-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateX(3px);
+    }
+
+    .search-item small {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .search-empty {
+      padding: 24px 12px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      [data-reveal], .hero-anim {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    }
+
+    @media (max-width: 960px) {
+      .features-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .steps-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .download-box {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .container {
+        width: calc(100% - 32px);
+      }
+      .nav-links {
+        display: none;
+      }
+      .search-trigger {
+        display: none;
+      }
+      .features-grid,
+      .steps-grid {
+        grid-template-columns: 1fr;
+      }
+      .hero-content {
+        padding: 48px 0 56px;
+      }
+      .section {
+        padding: 60px 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<header class="navbar" id="navbar">
+  <div class="container navbar-inner">
+    <div class="nav-left">
+      <a href="#top" class="brand-link">
+        <svg class="brand-svg" viewBox="0 0 100 100" aria-hidden="true">
+          <defs>
+            <linearGradient id="navShieldFill" x1="15%" y1="10%" x2="85%" y2="90%">
+              <stop offset="0%" stop-color="#5ee6b5" stop-opacity="0.34"/>
+              <stop offset="100%" stop-color="#cfe6ff" stop-opacity="0.10"/>
+            </linearGradient>
+            <linearGradient id="navShieldStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="55%" stop-color="#7ef0c8"/>
+              <stop offset="100%" stop-color="#cfe6ff"/>
+            </linearGradient>
+          </defs>
+          <path d="M50 9 L83 22 V48 C83 69 68 83 50 91 C32 83 17 69 17 48 V22 Z"
+                fill="url(#navShieldFill)"
+                stroke="url(#navShieldStroke)"
+                stroke-width="4.5"
+                stroke-linejoin="round"/>
+          <path d="M31 58 L35 37 L44 46 L50 31 L56 46 L65 37 L69 58 Z"
+                fill="#5ee6b5"
+                stroke="#ffffff"
+                stroke-width="1.4"
+                stroke-linejoin="round"/>
+          <rect x="33" y="63" width="34" height="5" rx="2.5" fill="#e6fff6"/>
+        </svg>
+        <span>SUTEMI</span>
+      </a>
+      <span class="version-badge" id="navVersion">v1.0.0</span>
+      <nav class="nav-links">
+        <a href="#get-started" data-i18n="nav_start">Get Started</a>
+        <a href="#features" data-i18n="nav_features">Features</a>
+        <a href="#downloads" data-i18n="nav_downloads">Downloads</a>
+        <a href="#faq" data-i18n="nav_faq">FAQ</a>
+      </nav>
+    </div>
+
+    <div class="nav-right">
+      <button type="button" class="search-trigger" id="openSearchBtn">
+        <span class="search-trigger-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <span data-i18n="search_btn">Search</span>
+        </span>
+        <span class="kbd-chip">Ctrl K</span>
+      </button>
+
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" class="lang-btn active" data-lang="en">EN</button>
+        <button type="button" class="lang-btn" data-lang="ru">RU</button>
+      </div>
+
+      <a class="icon-nav-btn" id="navGithubLink" href="#downloads" title="Download / Repository" aria-label="Repository">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.11.79-.25.79-.56v-2.02c-3.2.7-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.19-3.08-.12-.29-.52-1.47.11-3.06 0 0 .97-.31 3.17 1.18a10.96 10.96 0 0 1 5.78 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.77.11 3.06.74.8 1.19 1.83 1.19 3.08 0 4.41-2.7 5.39-5.26 5.67.41.36.78 1.07.78 2.15v3.19c0 .31.21.68.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-backdrop">
+      <div class="hero-dot-grid"></div>
+      <svg class="hero-fallback-art" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="pcbLine" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#5ee6b5" stop-opacity="0"/>
+            <stop offset="45%" stop-color="#5ee6b5" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#cfe6ff" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="heroShieldGrad" x1="15%" y1="10%" x2="85%" y2="90%">
+            <stop offset="0%" stop-color="#8bf0cc" stop-opacity="0.72"/>
+            <stop offset="52%" stop-color="#3ea680" stop-opacity="0.45"/>
+            <stop offset="100%" stop-color="#193d33" stop-opacity="0.85"/>
+          </linearGradient>
+          <linearGradient id="heroCrownGrad" x1="20%" y1="0%" x2="80%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="60%" stop-color="#aef7de"/>
+            <stop offset="100%" stop-color="#5ee6b5"/>
+          </linearGradient>
+          <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="24"/>
+          </filter>
+        </defs>
+
+        <g fill="none" stroke="url(#pcbLine)" stroke-width="2" opacity="0.65">
+          <path d="M-40 160 H360 L450 250 H780 L900 370 H1640"/>
+          <path d="M-40 240 H260 L380 360 H700 L820 480 H1640"/>
+          <path d="M-40 340 H180 L300 460 H620 L740 580 H1640"/>
+          <path d="M520 -20 V110 L650 240 H1120 L1260 100 V-20"/>
+          <path d="M1640 620 H1180 L1050 750 H660 L540 870 V940"/>
+          <path d="M1640 700 H1260 L1140 820 H780"/>
+        </g>
+
+        <g fill="#5ee6b5" opacity="0.55">
+          <circle cx="450" cy="250" r="3.5"/>
+          <circle cx="780" cy="250" r="3.5"/>
+          <circle cx="380" cy="360" r="3.5"/>
+          <circle cx="1120" cy="240" r="4"/>
+          <circle cx="1050" cy="750" r="4"/>
+        </g>
+
+        <g transform="translate(1090, 390) rotate(-14) skewX(-6)">
+          <ellipse cx="0" cy="40" rx="220" ry="200" fill="#5ee6b5" opacity="0.16" filter="url(#softGlow)"/>
+          <path d="M0 -210 L178 -138 V-4 C178 108 98 184 0 228 C-98 184 -178 108 -178 -4 V-138 Z"
+                fill="url(#heroShieldGrad)"
+                stroke="#b7fbe3"
+                stroke-opacity="0.55"
+                stroke-width="6"
+                stroke-linejoin="round"/>
+          <path d="M-128 -110 Q0 -164 128 -110" fill="none" stroke="#ffffff" stroke-opacity="0.45" stroke-width="5" stroke-linecap="round"/>
+          <path d="M-98 42 L-76 -74 L-28 -24 L0 -106 L28 -24 L76 -74 L98 42 Z"
+                fill="url(#heroCrownGrad)"
+                stroke="#ffffff"
+                stroke-opacity="0.7"
+                stroke-width="3"
+                stroke-linejoin="round"/>
+          <rect x="-88" y="68" width="176" height="24" rx="12" fill="url(#heroCrownGrad)"/>
+          <text x="0" y="305" text-anchor="middle" fill="#172421" font-size="68" font-weight="900" letter-spacing="10" font-family="Inter, Segoe UI, sans-serif">SUTEMI</text>
+        </g>
+      </svg>
+    </div>
+
+    <img class="hero-bg-img" id="heroBgImg" src="hero-bg.png" alt="">
+    <div class="hero-scrim"></div>
+
+    <div class="container hero-content">
+      <div class="hero-copy">
+        <div class="hero-eyebrow hero-anim d1">
+          <i></i>
+          <span data-i18n="hero_eyebrow">Private Connection · Windows Desktop</span>
+        </div>
+        <h1 class="hero-anim d2" data-i18n="hero_title">Private VPN utility for Windows desktop.</h1>
+        <p class="hero-sub hero-anim d3" data-i18n="hero_sub">Fast, Lightweight, Liquid Glass UI. Smart AI-ready server filtering, real latency scan and one-click protection.</p>
+        <div class="hero-actions hero-anim d4">
+          <a href="#downloads" class="btn-primary-mint" id="heroDownloadBtn">
+            <span data-i18n="hero_btn_dl">Download Setup</span>
+            <span class="btn-arrow">&rarr;</span>
+          </a>
+          <a href="#get-started" class="btn-secondary-dark" data-i18n="hero_btn_start">Get Started</a>
+          <a href="#features" class="btn-secondary-dark" data-i18n="hero_btn_feat">Features</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-head" data-reveal="slide-left">
+        <div class="section-kicker" data-i18n="feat_kicker">BUILT FOR SPEED &amp; AI</div>
+        <h2 data-i18n="feat_title">Everything you need for clean, fast routing</h2>
+        <p data-i18n="feat_desc">Sutemi pairs a modern headless Xray/sing-box core with a responsive Liquid Glass interface designed to cut out dead nodes before you even connect.</p>
+      </div>
+
+      <div class="features-grid">
+        <article class="feature-card" data-reveal style="--delay: 0ms;">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+          </div>
+          <h3 data-i18n="f1_title">Smart AI-Ready Filter</h3>
+          <p data-i18n="f1_desc">Automatically cleans massive 10,000+ node subscriptions down to the top 120 TCP-alive EU/US servers, removing dead and geo-blocked regions.</p>
+        </article>
+
+        <article class="feature-card" data-reveal style="--delay: 80ms;">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+          </div>
+          <h3 data-i18n="f2_title">Check AI &amp; Speed</h3>
+          <p data-i18n="f2_desc">Verifies your real exit IP, country, download Mbps, and live reachability for Gemini, Google AI Studio, ChatGPT, and Claude through the tunnel.</p>
+        </article>
+
+        <article class="feature-card" data-reveal style="--delay: 160ms;">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
+          <h3 data-i18n="f3_title">Proxy &amp; TUN Modes</h3>
+          <p data-i18n="f3_desc">Switch between System Proxy (works instantly with zero admin rights) and full-PC TUN Mode to route games, apps, and terminals.</p>
+        </article>
+
+        <article class="feature-card" data-reveal style="--delay: 240ms;">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <h3 data-i18n="f4_title">Auto Proxy Recovery</h3>
+          <p data-i18n="f4_desc">Backs up your Windows Internet Settings before connecting and restores them cleanly on disconnect, exit, or unexpected shutdown.</p>
+        </article>
+
+        <article class="feature-card" data-reveal style="--delay: 320ms;">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </div>
+          <h3 data-i18n="f5_title">Built-in Free Servers</h3>
+          <p data-i18n="f5_desc">Load curated open-source anti-DPI collections in one click or paste your own subscription URL, base64 list, or individual share links.</p>
+        </article>
+
+        <article class="feature-card" data-reveal style="--delay: 400ms;">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+          </div>
+          <h3 data-i18n="f6_title">Live Ping, GeoIP &amp; Speed</h3>
+          <p data-i18n="f6_desc">Priority batch HTTPS latency scan, automatic GeoIP country badges, bulk selection with Shift+Click, and one-click dead/slow cleanup.</p>
+        </article>
+      </div>
+
+      <div class="protocols-bar" data-reveal="scale" style="--delay: 120ms;">
+        <span class="protocols-label" data-i18n="proto_label">SUPPORTED PROTOCOLS</span>
+        <div class="protocol-pills">
+          <span class="proto-pill">VLESS Reality</span>
+          <span class="proto-pill">VLESS TLS</span>
+          <span class="proto-pill">Hysteria2</span>
+          <span class="proto-pill">TUIC</span>
+          <span class="proto-pill">Trojan</span>
+          <span class="proto-pill">VMess</span>
+          <span class="proto-pill">Shadowsocks</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GET STARTED -->
+  <section class="section" id="get-started">
+    <div class="container">
+      <div class="section-head" data-reveal="slide-left">
+        <div class="section-kicker" data-i18n="start_kicker">QUICK START</div>
+        <h2 data-i18n="start_title">Up and running in 60 seconds</h2>
+        <p data-i18n="start_desc">No account, no registration, and no manual config editing required.</p>
+      </div>
+
+      <div class="steps-grid">
+        <div class="step-card" data-reveal style="--delay: 0ms;">
+          <div class="step-num">1</div>
+          <h3 data-i18n="s1_title">Run the installer</h3>
+          <p data-i18n="s1_desc">Download and launch the Windows setup file. If SmartScreen appears, click "More info" &rarr; "Run anyway".</p>
+        </div>
+        <div class="step-card" data-reveal style="--delay: 90ms;">
+          <div class="step-num">2</div>
+          <h3 data-i18n="s2_title">Add servers</h3>
+          <p data-i18n="s2_desc">Click the server card, paste your own link / subscription, or open "Built-in Free Servers" to load a list.</p>
+        </div>
+        <div class="step-card" data-reveal style="--delay: 180ms;">
+          <div class="step-num">3</div>
+          <h3 data-i18n="s3_title">Pick fastest AI node</h3>
+          <p data-i18n="s3_desc">Press "Ping all" or "Auto AI Fastest" to automatically verify and connect to a fast EU/US server.</p>
+        </div>
+        <div class="step-card" data-reveal style="--delay: 270ms;">
+          <div class="step-num">4</div>
+          <h3 data-i18n="s4_title">Verify &amp; browse</h3>
+          <p data-i18n="s4_desc">Hit "Check AI &amp; Speed" on the main screen to confirm your exit IP, Mbps speed, and AI service access.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DOWNLOADS -->
+  <section class="section" id="downloads">
+    <div class="container">
+      <div class="section-head" data-reveal="slide-left">
+        <div class="section-kicker" data-i18n="dl_kicker">DOWNLOADS</div>
+        <h2 data-i18n="dl_title">Download Sutemi for Windows</h2>
+        <p data-i18n="dl_desc">Standalone offline installer with the local headless engine bundled inside.</p>
+      </div>
+
+      <div class="download-box" data-reveal="scale">
+        <div class="download-main">
+          <div class="download-meta-row">
+            <span class="dl-tag mint" id="dlVersionTag">v1.0.0 · Latest</span>
+            <span class="dl-tag">Windows 10 / 11 (x64)</span>
+            <span class="dl-tag">~144 MB Setup</span>
+          </div>
+          <h3 data-i18n="dl_card_title">Sutemi Desktop Installer</h3>
+          <p data-i18n="dl_card_desc">Includes the Liquid Glass Electron UI, bundled Throne/sing-box engine, System Proxy manager, and TUN driver support. Works out of the box.</p>
+          <div class="hero-actions">
+            <a href="Throne-UI-Setup-1.0.0.exe" class="btn-primary-mint" id="directDownloadBtn" download>
+              <span data-i18n="dl_btn_main">Download Installer (.exe)</span>
+              <span class="btn-arrow btn-arrow-down">&darr;</span>
+            </a>
+            <a href="#faq" class="btn-secondary-dark" data-i18n="dl_btn_help">Installation Help</a>
+          </div>
+        </div>
+
+        <div class="download-specs">
+          <div class="spec-row">
+            <span data-i18n="spec_os_k">Operating System</span>
+            <strong>Windows 10 / 11 (64-bit)</strong>
+          </div>
+          <div class="spec-row">
+            <span data-i18n="spec_mode_k">Default Mode</span>
+            <strong data-i18n="spec_mode_v">System Proxy (no admin)</strong>
+          </div>
+          <div class="spec-row">
+            <span data-i18n="spec_tun_k">Full PC Routing</span>
+            <strong data-i18n="spec_tun_v">TUN Mode (Run as Admin)</strong>
+          </div>
+          <div class="spec-row">
+            <span data-i18n="spec_port_k">Local Inbound</span>
+            <strong>127.0.0.1:2080 (Mixed)</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section" id="faq">
+    <div class="container">
+      <div class="section-head" data-reveal="slide-left">
+        <div class="section-kicker">FAQ</div>
+        <h2 data-i18n="faq_title">Frequently Asked Questions</h2>
+        <p data-i18n="faq_desc">Common setup questions and quick troubleshooting tips.</p>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item open" data-reveal style="--delay: 0ms;">
+          <button type="button" class="faq-q">
+            <span data-i18n="q1">Why does Windows SmartScreen warn when launching the installer?</span>
+            <span class="faq-plus">+</span>
+          </button>
+          <div class="faq-a">
+            <div class="faq-a-inner">
+              <p data-i18n="a1">Windows shows SmartScreen on any new unsigned executable that hasn't paid for a commercial EV certificate. Click "More info" and then "Run anyway" to install Sutemi normally.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-reveal style="--delay: 70ms;">
+          <button type="button" class="faq-q">
+            <span data-i18n="q2">What is the difference between System Proxy and TUN Mode?</span>
+            <span class="faq-plus">+</span>
+          </button>
+          <div class="faq-a">
+            <div class="faq-a-inner">
+              <p data-i18n="a2">System Proxy routes browsers and proxy-aware apps without requiring Administrator privileges. TUN Mode creates a virtual network adapter and routes all traffic on your entire PC (games, launchers, CLI tools), requiring Sutemi to be launched as Administrator.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-reveal style="--delay: 140ms;">
+          <button type="button" class="faq-q">
+            <span data-i18n="q3">How does "Auto AI Fastest" select a server?</span>
+            <span class="faq-plus">+</span>
+          </button>
+          <div class="faq-a">
+            <div class="faq-a-inner">
+              <p data-i18n="a3">It prioritizes low-latency VLESS Reality / Hysteria2 / EU &amp; US nodes, connects, and performs a live check against Cloudflare Trace and Google Gemini endpoints before activating your tunnel—skipping geo-blocked or broken servers automatically.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" data-reveal style="--delay: 210ms;">
+          <button type="button" class="faq-q">
+            <span data-i18n="q4">What if my antivirus flags Throne.exe inside the app folder?</span>
+            <span class="faq-plus">+</span>
+          </button>
+          <div class="faq-a">
+            <div class="faq-a-inner">
+              <p data-i18n="a4">Proxy cores and TUN drivers are occasionally false-flagged by heuristic antivirus engines. If you see "Throne.exe not found", add Sutemi's installation folder to your antivirus exclusions and reinstall.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <span>SUTEMI <strong style="color:#d6e0f5;">v1.0.0</strong> &middot; <span data-i18n="footer_note">Private Connection for Windows</span></span>
+    <div class="footer-links">
+      <a href="#features" data-i18n="nav_features">Features</a>
+      <a href="#get-started" data-i18n="nav_start">Get Started</a>
+      <a href="#downloads" data-i18n="nav_downloads">Downloads</a>
+      <a href="#faq" data-i18n="nav_faq">FAQ</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Search Modal (Ctrl+K) -->
+<div class="search-backdrop" id="searchBackdrop">
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search">
+    <div class="search-input-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="searchModalInput" class="search-field" placeholder="Search features, protocols, FAQ...">
+      <span class="kbd-chip">ESC</span>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+
+<script>
+  const SITE_CONFIG = {
+    version: 'v1.0.0',
+    downloadUrl: 'Throne-UI-Setup-1.0.0.exe',
+    githubUrl: '#downloads'
+  };
+
+  const I18N = {
+    en: {
+      nav_start: 'Get Started',
+      nav_features: 'Features',
+      nav_downloads: 'Downloads',
+      nav_faq: 'FAQ',
+      search_btn: 'Search',
+      search_placeholder: 'Search features, protocols, FAQ...',
+      hero_eyebrow: 'Private Connection · Windows Desktop',
+      hero_title: 'Private VPN utility for Windows desktop.',
+      hero_sub: 'Fast, Lightweight, Liquid Glass UI. Smart AI-ready server filtering, real latency scan and one-click protection.',
+      hero_btn_dl: 'Download Setup',
+      hero_btn_start: 'Get Started',
+      hero_btn_feat: 'Features',
+      feat_kicker: 'BUILT FOR SPEED & AI',
+      feat_title: 'Everything you need for clean, fast routing',
+      feat_desc: 'Sutemi pairs a modern headless Xray/sing-box core with a responsive Liquid Glass interface designed to cut out dead nodes before you even connect.',
+      f1_title: 'Smart AI-Ready Filter',
+      f1_desc: 'Automatically cleans massive 10,000+ node subscriptions down to the top 120 TCP-alive EU/US servers, removing dead and geo-blocked regions.',
+      f2_title: 'Check AI & Speed',
+      f2_desc: 'Verifies your real exit IP, country, download Mbps, and live reachability for Gemini, Google AI Studio, ChatGPT, and Claude through the tunnel.',
+      f3_title: 'Proxy & TUN Modes',
+      f3_desc: 'Switch between System Proxy (works instantly with zero admin rights) and full-PC TUN Mode to route games, apps, and terminals.',
+      f4_title: 'Auto Proxy Recovery',
+      f4_desc: 'Backs up your Windows Internet Settings before connecting and restores them cleanly on disconnect, exit, or unexpected shutdown.',
+      f5_title: 'Built-in Free Servers',
+      f5_desc: 'Load curated open-source anti-DPI collections in one click or paste your own subscription URL, base64 list, or individual share links.',
+      f6_title: 'Live Ping, GeoIP & Speed',
+      f6_desc: 'Priority batch HTTPS latency scan, automatic GeoIP country badges, bulk selection with Shift+Click, and one-click dead/slow cleanup.',
+      proto_label: 'SUPPORTED PROTOCOLS',
+      start_kicker: 'QUICK START',
+      start_title: 'Up and running in 60 seconds',
+      start_desc: 'No account, no registration, and no manual config editing required.',
+      s1_title: 'Run the installer',
+      s1_desc: 'Download and launch the Windows setup file. If SmartScreen appears, click "More info" -> "Run anyway".',
+      s2_title: 'Add servers',
+      s2_desc: 'Click the server card, paste your own link / subscription, or open "Built-in Free Servers" to load a list.',
+      s3_title: 'Pick fastest AI node',
+      s3_desc: 'Press "Ping all" or "Auto AI Fastest" to automatically verify and connect to a fast EU/US server.',
+      s4_title: 'Verify & browse',
+      s4_desc: 'Hit "Check AI & Speed" on the main screen to confirm your exit IP, Mbps speed, and AI service access.',
+      dl_kicker: 'DOWNLOADS',
+      dl_title: 'Download Sutemi for Windows',
+      dl_desc: 'Standalone offline installer with the local headless engine bundled inside.',
+      dl_card_title: 'Sutemi Desktop Installer',
+      dl_card_desc: 'Includes the Liquid Glass Electron UI, bundled Throne/sing-box engine, System Proxy manager, and TUN driver support. Works out of the box.',
+      dl_btn_main: 'Download Installer (.exe)',
+      dl_btn_help: 'Installation Help',
+      spec_os_k: 'Operating System',
+      spec_mode_k: 'Default Mode',
+      spec_mode_v: 'System Proxy (no admin)',
+      spec_tun_k: 'Full PC Routing',
+      spec_tun_v: 'TUN Mode (Run as Admin)',
+      spec_port_k: 'Local Inbound',
+      faq_title: 'Frequently Asked Questions',
+      faq_desc: 'Common setup questions and quick troubleshooting tips.',
+      q1: 'Why does Windows SmartScreen warn when launching the installer?',
+      a1: 'Windows shows SmartScreen on any new unsigned executable that has not paid for a commercial EV certificate. Click "More info" and then "Run anyway" to install Sutemi normally.',
+      q2: 'What is the difference between System Proxy and TUN Mode?',
+      a2: 'System Proxy routes browsers and proxy-aware apps without requiring Administrator privileges. TUN Mode creates a virtual network adapter and routes all traffic on your entire PC (games, launchers, CLI tools), requiring Sutemi to be launched as Administrator.',
+      q3: 'How does "Auto AI Fastest" select a server?',
+      a3: 'It prioritizes low-latency VLESS Reality / Hysteria2 / EU & US nodes, connects, and performs a live check against Cloudflare Trace and Google Gemini endpoints before activating your tunnel—skipping geo-blocked or broken servers automatically.',
+      q4: 'What if my antivirus flags Throne.exe inside the app folder?',
+      a4: 'Proxy cores and TUN drivers are occasionally false-flagged by heuristic antivirus engines. If you see "Throne.exe not found", add Sutemi\'s installation folder to your antivirus exclusions and reinstall.',
+      footer_note: 'Private Connection for Windows',
+      search_empty: 'Nothing matched your query'
+    },
+    ru: {
+      nav_start: 'Быстрый старт',
+      nav_features: 'Возможности',
+      nav_downloads: 'Скачать',
+      nav_faq: 'Вопросы',
+      search_btn: 'Поиск',
+      search_placeholder: 'Поиск по возможностям, протоколам, FAQ...',
+      hero_eyebrow: 'Приватное подключение · Windows',
+      hero_title: 'Приватный VPN-клиент для Windows.',
+      hero_sub: 'Быстрый, лёгкий, в стиле Liquid Glass. Умная фильтрация серверов под AI, реальный замер задержки и защита в один клик.',
+      hero_btn_dl: 'Скачать Setup',
+      hero_btn_start: 'Быстрый старт',
+      hero_btn_feat: 'Возможности',
+      feat_kicker: 'СКОРОСТЬ И ДОСТУП К AI',
+      feat_title: 'Всё необходимое для быстрого и чистого трафика',
+      feat_desc: 'Sutemi объединяет современное headless-ядро Xray/sing-box и плавный интерфейс Liquid Glass, отсеивая мёртвые узлы ещё до подключения.',
+      f1_title: 'Умный AI-фильтр',
+      f1_desc: 'Автоматически вычищает подписки на 10 000+ нод до топ-120 живых серверов Европы и США, убирая мёртвые и заблокированные регионы.',
+      f2_title: 'Проверка AI и скорости',
+      f2_desc: 'Проверяет реальный выходной IP, страну, скорость в Mbps и живой доступ к Gemini, Google AI Studio, ChatGPT и Claude прямо через туннель.',
+      f3_title: 'System Proxy и TUN',
+      f3_desc: 'Переключайтесь между System Proxy (работает сразу без прав админа) и полным TUN-режимом для всего ПК, игр и терминала.',
+      f4_title: 'Автовосстановление сети',
+      f4_desc: 'Сохраняет исходные настройки прокси Windows перед запуском и аккуратно возвращает их обратно при отключении или закрытии.',
+      f5_title: 'Встроенные серверы',
+      f5_desc: 'Загружайте проверенные open-source анти-DPI списки в один клик или вставляйте свои подписки, base64 и отдельные ссылки.',
+      f6_title: 'Пинг, GeoIP и замер IP',
+      f6_desc: 'Быстрый HTTPS-пинг приоритетными батчами, автоопределение флагов стран, массовое выделение через Shift+Click и очистка медленных нод.',
+      proto_label: 'ПОДДЕРЖИВАЕМЫЕ ПРОТОКОЛЫ',
+      start_kicker: 'БЫСТРЫЙ СТАРТ',
+      start_title: 'Запуск за 60 секунд',
+      start_desc: 'Без аккаунтов, регистрации и ручной возни с конфигами.',
+      s1_title: 'Установите программу',
+      s1_desc: 'Скачайте и запустите установщик Windows. При окне SmartScreen нажмите «Подробнее» -> «Выполнить в любом случае».',
+      s2_title: 'Добавьте серверы',
+      s2_desc: 'Нажмите на карточку сервера, вставьте свою ссылку/подписку или откройте «Built-in Free Servers».',
+      s3_title: 'Выберите быстрый узел',
+      s3_desc: 'Нажмите «Ping all» или «Auto AI Fastest» — клиент сам проверит и подключит быстрый EU/US сервер.',
+      s4_title: 'Проверьте и работайте',
+      s4_desc: 'Нажмите «Check AI & Speed» на главном экране, чтобы увидеть реальный IP, скорость и статус нейросетей.',
+      dl_kicker: 'ЗАГРУЗКА',
+      dl_title: 'Скачать Sutemi для Windows',
+      dl_desc: 'Полный автономный установщик — локальный движок уже упакован внутрь.',
+      dl_card_title: 'Установщик Sutemi Desktop',
+      dl_card_desc: 'Включает интерфейс Liquid Glass, встроенное ядро Throne/sing-box, управление системным прокси и поддержку TUN-драйвера.',
+      dl_btn_main: 'Скачать установщик (.exe)',
+      dl_btn_help: 'Помощь с установкой',
+      spec_os_k: 'Операционная система',
+      spec_mode_k: 'Режим по умолчанию',
+      spec_mode_v: 'System Proxy (без админа)',
+      spec_tun_k: 'Весь трафик ПК',
+      spec_tun_v: 'TUN Mode (от админа)',
+      spec_port_k: 'Локальный порт',
+      faq_title: 'Частые вопросы',
+      faq_desc: 'Ответы по установке, правам администратора и работе фильтров.',
+      q1: 'Почему Windows SmartScreen показывает предупреждение при запуске?',
+      a1: 'SmartScreen появляется на любых новых программах без дорогой коммерческой цифровой подписи. Нажмите «Подробнее» -> «Выполнить в любом случае» для обычной установки.',
+      q2: 'Чем System Proxy отличается от TUN Mode?',
+      a2: 'System Proxy направляет браузеры и программы с поддержкой прокси без прав администратора. TUN Mode создаёт виртуальный сетевой адаптер для всего ПК (игры, лаунчеры, утилиты) и требует запуска Sutemi от имени администратора.',
+      q3: 'Как работает кнопка «Auto AI Fastest»?',
+      a3: 'Она берёт серверы с лучшим пингом (в приоритете VLESS Reality / Hysteria2 / Европа и США), подключается и проверяет реальный выход через Cloudflare Trace и Google Gemini, автоматически отбрасывая заблокированные IP.',
+      q4: 'Что делать, если антивирус ругнулся на Throne.exe в папке программы?',
+      a4: 'Ядра прокси и TUN-драйверы иногда вызывают ложные срабатывания антивирусов. Если видите ошибку «Throne.exe not found», добавьте папку установки Sutemi в исключения антивируса и переустановите.',
+      footer_note: 'Приватное подключение для Windows',
+      search_empty: 'Ничего не найдено'
+    }
+  };
+
+  const SEARCH_ITEMS = [
+    { href: '#downloads', en: 'Download Sutemi Installer (.exe)', ru: 'Скачать установщик Sutemi (.exe)', cat: 'Downloads' },
+    { href: '#features', en: 'Smart AI-Ready Filter (Top 120)', ru: 'Умный AI-фильтр подписок', cat: 'Features' },
+    { href: '#features', en: 'Check AI & Speed (Gemini, AI Studio, ChatGPT, Claude)', ru: 'Проверка AI и скорости (Gemini, ChatGPT, Claude)', cat: 'Features' },
+    { href: '#features', en: 'System Proxy & TUN Mode', ru: 'Режимы System Proxy и TUN', cat: 'Features' },
+    { href: '#features', en: 'Protocols: VLESS Reality, Hysteria2, TUIC, Trojan, VMess, SS', ru: 'Протоколы: VLESS Reality, Hysteria2, TUIC, Trojan', cat: 'Protocols' },
+    { href: '#get-started', en: 'Quick Start Guide (60 seconds)', ru: 'Быстрый старт за 60 секунд', cat: 'Guide' },
+    { href: '#faq', en: 'Windows SmartScreen warning', ru: 'Предупреждение Windows SmartScreen', cat: 'FAQ' },
+    { href: '#faq', en: 'Antivirus false positive / Throne.exe not found', ru: 'Ложное срабатывание антивируса / Throne.exe', cat: 'FAQ' }
+  ];
+
+  let currentLang = (navigator.language || '').toLowerCase().startsWith('ru') ? 'ru' : 'en';
+
+  function applyConfig() {
+    document.getElementById('navVersion').textContent = SITE_CONFIG.version;
+    document.getElementById('dlVersionTag').textContent = `${SITE_CONFIG.version} · Latest`;
+    document.getElementById('directDownloadBtn').href = SITE_CONFIG.downloadUrl;
+    document.getElementById('navGithubLink').href = SITE_CONFIG.githubUrl;
+  }
+
+  function applyLanguage(lang) {
+    currentLang = I18N[lang] ? lang : 'en';
+    document.documentElement.lang = currentLang;
+    const dict = I18N[currentLang];
+
+    document.querySelectorAll('[data-i18n]').forEach(node => {
+      const key = node.getAttribute('data-i18n');
+      if (dict[key]) node.textContent = dict[key];
+    });
+
+    document.getElementById('searchModalInput').placeholder = dict.search_placeholder;
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.lang === currentLang);
+    });
+    renderSearchResults(document.getElementById('searchModalInput').value);
+  }
+
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', () => applyLanguage(btn.dataset.lang));
+  });
+
+  // Scroll progress & navbar glass shadow
+  const navbar = document.getElementById('navbar');
+  const scrollProgress = document.getElementById('scrollProgress');
+  function updateScrollState() {
+    const y = window.scrollY || window.pageYOffset || 0;
+    navbar.classList.toggle('scrolled', y > 12);
+    const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    scrollProgress.style.width = `${Math.min(100, (y / maxScroll) * 100)}%`;
+  }
+  window.addEventListener('scroll', updateScrollState, { passive: true });
+  updateScrollState();
+
+  // Scroll reveal animations
+  const revealNodes = document.querySelectorAll('[data-reveal]');
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view');
+          observer.unobserve(entry.target);
+        }
+      }
+    }, { threshold: 0.12, rootMargin: '0px 0px -36px 0px' });
+
+    revealNodes.forEach(node => observer.observe(node));
+  } else {
+    revealNodes.forEach(node => node.classList.add('in-view'));
+  }
+
+  // Smooth FAQ accordion
+  document.querySelectorAll('.faq-q').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.parentElement.classList.toggle('open');
+    });
+  });
+
+  // Hide hero-bg.png cleanly if user hasn't generated it yet
+  const heroBgImg = document.getElementById('heroBgImg');
+  heroBgImg.addEventListener('error', () => {
+    heroBgImg.style.display = 'none';
+  });
+
+  // Search modal (Ctrl + K)
+  const searchBackdrop = document.getElementById('searchBackdrop');
+  const searchInput = document.getElementById('searchModalInput');
+  const searchResults = document.getElementById('searchResults');
+
+  function renderSearchResults(query) {
+    const q = String(query || '').trim().toLowerCase();
+    const matches = SEARCH_ITEMS.filter(item => {
+      if (!q) return true;
+      return item.en.toLowerCase().includes(q) || item.ru.toLowerCase().includes(q) || item.cat.toLowerCase().includes(q);
+    });
+
+    searchResults.innerHTML = '';
+    if (matches.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'search-empty';
+      empty.textContent = I18N[currentLang].search_empty;
+      searchResults.appendChild(empty);
+      return;
+    }
+
+    for (const item of matches) {
+      const link = document.createElement('a');
+      link.className = 'search-item';
+      link.href = item.href;
+      const title = document.createElement('span');
+      title.textContent = currentLang === 'ru' ? item.ru : item.en;
+      const cat = document.createElement('small');
+      cat.textContent = item.cat;
+      link.appendChild(title);
+      link.appendChild(cat);
+      link.addEventListener('click', closeSearchModal);
+      searchResults.appendChild(link);
+    }
+  }
+
+  function openSearchModal() {
+    searchBackdrop.classList.add('open');
+    searchInput.value = '';
+    renderSearchResults('');
+    setTimeout(() => searchInput.focus(), 20);
+  }
+
+  function closeSearchModal() {
+    searchBackdrop.classList.remove('open');
+  }
+
+  document.getElementById('openSearchBtn').addEventListener('click', openSearchModal);
+  searchBackdrop.addEventListener('click', e => {
+    if (e.target === searchBackdrop) closeSearchModal();
+  });
+  searchInput.addEventListener('input', () => renderSearchResults(searchInput.value));
+
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.code === 'KeyK') {
+      e.preventDefault();
+      if (searchBackdrop.classList.contains('open')) closeSearchModal();
+      else openSearchModal();
+    } else if (e.key === 'Escape') {
+      closeSearchModal();
+    }
+  });
+
+  applyConfig();
+  applyLanguage(currentLang);
+</script>
+</body>
+</html>
